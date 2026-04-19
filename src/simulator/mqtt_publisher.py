@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 import paho.mqtt.client as mqtt
@@ -29,6 +30,7 @@ def run_publisher():
         for reading in readings:
             message = json.dumps(reading)
             client.publish(topic, message)
-            print(f"Sent: {message}")
+            logging.info(
+                f"Sent message from {reading['sensor_id']} (status={reading['status']})")
 
         time.sleep(interval)

@@ -1,15 +1,19 @@
 import json
+import logging
 
 import paho.mqtt.client as mqtt
-from src.utils.config_loader import load_config
+from src.utils.config_loader import load_config, setup_logging
 
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
+        logging.info("Connected to MQTT broker successfully.")
         print("Connected to MQTT broker successfully.")
         client.subscribe(userdata["topic"])
+        logging.info(f"Subscribed to topic: {userdata['topic']}")
         print(f"Subscribed to topic: {userdata['topic']}")
     else:
+        logging.error(f"Failed to connect to MQTT broker. Return code: {rc}")
         print(f"Failed to connect to MQTT broker. Return code: {rc}")
 
 
@@ -17,6 +21,9 @@ def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
         reading = json.loads(payload)
+
+        logging.info(
+            f"Received reading from {reading['sensor_id']} (status={reading['status']})")
 
         print("\nReceived sensor reading:")
         print(f"  Sensor ID:    {reading['sensor_id']}")
@@ -29,13 +36,20 @@ def on_message(client, userdata, msg):
         print(f"  Timestamp:    {reading['timestamp']}")
 
     except json.JSONDecodeError:
+        logging.error("Received invalid JSON message.")
         print("Received invalid JSON message.")
     except KeyError as e:
+        logging.error(f"Missing expected field in message: {e}")
         print(f"Missing expected field in message: {e}")
 
 
 def run_consumer():
     config = load_config()
+
+    setup_logging(
+        log_file=config["logging"]["log_file"],
+        level=config["logging"]["level"]
+    )
 
     broker = config["mqtt"]["broker"]
     port = config["mqtt"]["port"]
